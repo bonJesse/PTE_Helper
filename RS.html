@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel 内容提取与分析</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://unpkg.com/compromise@latest/builds/compromise.min.js"></script>
+    <style>
+        :root {
+            --ios-blue: #007AFF;
+            --ios-green: #34C759;
+            --ios-gray: #8E8E93;
+            --ios-gray-2: #AEAEB2;
+            --ios-gray-3: #C7C7CC;
+            --ios-gray-4: #D1D1D6;
+            --ios-gray-5: #E5E5EA;
+            --ios-gray-6: #F2F2F7;
+            --ios-background: #FFFFFF;
+            --container-width: 1200px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--ios-background);
+            margin: 0;
+            padding: 20px;
+            color: var(--ios-gray);
+        }
+
+        .container {
+            max-width: var(--container-width);
+            margin: 0 auto;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .fixed-header {
+            position: sticky;
+            top: 0;
+            background: var(--ios-background);
+            z-index: 100;
+            padding: 20px 40px;
+            border-bottom: 1px solid var(--ios-gray-5);
+        }
+
+        .scrollable-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 40px;
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: var(--ios-gray-4) transparent;
+        }
+
+        .scrollable-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .scrollable-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .scrollable-content::-webkit-scrollbar-thumb {
+            background-color: var(--ios-gray-4);
+            border-radius: 4px;
+            border: 2px solid var(--ios-background);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, rgba(0, 122, 255, 0.95), rgba(94, 92, 230, 0.95));
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 4px 20px rgba(0, 122, 255, 0.2),
+                inset 0 2px 4px rgba(255, 255, 255, 0.5);
+        }
+
+        .logo::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: 15px;
+            height: 15px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            filter: blur(2px);
+        }
+
+        .cat-logo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 80%;
+        }
+
+        .cat-ears {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70%;
+            height: 35%;
+        }
+
+        .cat-ear {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 12px solid #ffffff;
+        }
+
+        .cat-ear.left {
+            left: -6px;
+            transform: rotate(-30deg);
+        }
+
+        .cat-ear.right {
+            right: -6px;
+            transform: rotate(30deg);
+        }
+
+        .cat-face {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 80%;
+            background: #ffffff;
+            border-radius: 50%;
+        }
+
+        .cat-eyes {
+            position: absolute;
+            top: 40%;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            padding: 0 15%;
+        }
+
+        .cat-eye {
+            width: 25%;
+            height: 25%;
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            box-shadow: 0 0 10px rgba(79, 172, 254, 0.5);
+            border-radius: 50%;
+            animation: blink 4s infinite;
+        }
+
+        @keyframes blink {
+            0%, 96%, 98% {
+                transform: scaleY(1);
+            }
+            97% {
+                transform: scaleY(0.1);
+            }
+        }
+
+        .cat-mouth {
+            position: absolute;
+            bottom: 25%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20%;
+            height: 10%;
+            border-bottom: 2px solid #2D31FA;
+            border-radius: 0 0 100% 100%;
+        }
+
+        .speech-bubble {
+            position: absolute;
+            right: -4px;
+            top: 4px;
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 4px 6px;
+            font-size: 12px;
+            color: #2D31FA;
+            transform: rotate(10deg);
+            animation: float 2s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: rotate(10deg) translateY(0);
+            }
+            50% {
+                transform: rotate(10deg) translateY(-2px);
+            }
+        }
+
+        .upload-area {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            border: 2px dashed var(--ios-gray-4);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--ios-gray-6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .upload-text {
+            color: var(--ios-gray);
+            font-size: 14px;
+        }
+
+        .today-stats {
+            position: sticky;
+            top: calc(header-height);
+            z-index: 99;
+            margin: 0;
+            border-bottom: 1px solid var(--ios-gray-5);
+            background: var(--ios-gray-6);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stats-info {
+            display: flex;
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--ios-blue);
+        }
+
+        .clear-checked {
+            padding: 8px 16px;
+            background: var(--ios-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .clear-checked:hover {
+            background: #0071E3;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .content-item {
+            position: relative;
+            transform: translateY(0);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background-color: var(--ios-background);
+            padding: 20px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border: 1px solid var(--ios-gray-5);
+        }
+
+        .content-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-item.checked {
+            background-color: var(--ios-gray-5);
+        }
+
+        .vocab-analysis {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: var(--ios-gray);
+            display: none;
+        }
+
+        .vocab-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            background-color: rgba(0, 122, 255, 0.1);
+            color: var(--ios-blue);
+            border-radius: 4px;
+            margin: 2px;
+            font-size: 0.85em;
+        }
+
+        .streak-calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-top: 20px;
+            padding: 10px;
+            background: var(--ios-gray-5);
+            border-radius: 8px;
+        }
+
+        .streak-day {
+            aspect-ratio: 1;
+            border-radius: 4px;
+            background: #ebedf0;
+        }
+
+        .streak-day.checked {
+            background: var(--ios-green);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .vocab-toggle {
+            background: var(--ios-blue);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .filter-button {
+            padding: 8px 16px;
+            background: var(--ios-gray-6);
+            color: var(--ios-blue);
+            border: 1px solid var(--ios-gray-4);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-right: 10px;
+        }
+
+        .filter-button.active {
+            background: var(--ios-blue);
+            color: white;
+        }
+
+        .practice-count {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 24px;
+            color: rgba(52, 199, 89, 0.2);
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .action-button {
+            padding: 6px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin: 0 4px;
+            background: transparent;
+        }
+
+        .check-button {
+            color: var(--ios-green);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .check-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--ios-green);
+            opacity: 0.1;
+            border-radius: 4px;
+            transform: scale(0);
+            transition: transform 0.2s ease;
+        }
+
+        .check-button:hover::before {
+            transform: scale(1);
+        }
+
+        .practice-button {
+            color: var(--ios-blue);
+        }
+
+        .note-input {
+            display: none;
+            width: 100%;
+            padding: 8px;
+            margin-top: 8px;
+            border: 1px solid var(--ios-gray-4);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .note-input:focus {
+            border-color: var(--ios-blue);
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+        }
+
+        @keyframes checkmark {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .checked .check-button {
+            background: var(--ios-green);
+            color: white;
+            animation: checkmark 0.3s ease;
+        }
+
+        /* 更新句子文本样式 */
+        .content-text {
+            font-size: 16px;
+            color: #000000;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        /* 猫咪对话框样式 */
+        .cat-dialog {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%) scale(0);
+            background: white;
+            padding: 10px 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 10px;
+            white-space: nowrap;
+            width: auto;
+        }
+
+        .cat-dialog::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 8px solid white;
+        }
+
+        .cat-dialog.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) scale(1);
+        }
+
+        .cat-dialog-text {
+            color: var(--ios-text);
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .cat-dialog-buttons {
+            display: flex;
+            gap: 8px;
+            margin-left: 4px;
+        }
+
+        .cat-dialog-button {
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+            min-width: 44px;
+            text-align: center;
+        }
+
+        .cat-dialog-cancel {
+            background: var(--ios-gray-6);
+            color: var(--ios-blue);
+        }
+
+        .cat-dialog-confirm {
+            background: var(--ios-blue);
+            color: white;
+        }
+
+        .cat-dialog-button:hover {
+            transform: scale(1.05);
+        }
+
+        /* 优化猫咪说话动画 */
+        @keyframes catTalk {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(1.2); }
+        }
+
+        .talking .cat-mouth {
+            animation: catTalk 0.4s ease infinite;
+            transform-origin: center bottom;
+        }
+
+        /* 添加对话框弹出动画 */
+        @keyframes dialogPopIn {
+            0% { 
+                opacity: 0;
+                transform: translateX(-50%) scale(0.8) translateY(-10px);
+            }
+            50% { 
+                transform: translateX(-50%) scale(1.05) translateY(0);
+            }
+            100% { 
+                opacity: 1;
+                transform: translateX(-50%) scale(1) translateY(0);
+            }
+        }
+
+        .cat-dialog.show {
+            animation: dialogPopIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            position: relative;
+        }
+
+        .logo {
+            width: 80px;  /* 更大的 logo */
+            height: 80px;
+        }
+
+        .cat-eye {
+            position: relative;
+            transition: transform 0.2s ease;
+        }
+
+        .assistant-bubble {
+            position: fixed;
+            top: auto;
+            bottom: 100px;
+            left: 50%;
+            right: auto;
+            transform: translateX(-50%) translateY(20px);
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            max-width: 300px;
+            text-align: center;
+        }
+
+        .assistant-bubble.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .assistant-bubble::before {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid white;
+            border-bottom: none;
+        }
+
+        .upload-area {
+            width: 400px;  /* 固定宽度 */
+        }
+
+        /* 添加对话框弹出动画 */
+        @keyframes popIn {
+            0% { 
+                transform: translateX(-50%) scale(0.8);
+                opacity: 0;
+            }
+            50% { 
+                transform: translateX(-50%) scale(1.1);
+            }
+            100% { 
+                transform: translateX(-50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .cat-dialog.show {
+            animation: popIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="fixed-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo">
+                        <div class="cat-logo">
+                            <div class="cat-ears">
+                                <div class="cat-ear left"></div>
+                                <div class="cat-ear right"></div>
+                            </div>
+                            <div class="cat-face">
+                                <div class="cat-eyes">
+                                    <div class="cat-eye"></div>
+                                    <div class="cat-eye"></div>
+                                </div>
+                                <div class="cat-mouth"></div>
+                            </div>
+                            <div class="speech-bubble">RS</div>
+                        </div>
+                    </div>
+                    <h1>PTE_RS_助手</h1>
+                    <div class="cat-dialog" id="catDialog">
+                        <div class="cat-dialog-text">确定清除打卡记录？</div>
+                        <div class="cat-dialog-buttons">
+                            <button class="cat-dialog-button cat-dialog-cancel" onclick="hideCatDialog()">取消</button>
+                            <button class="cat-dialog-button cat-dialog-confirm" onclick="confirmClearChecked()">确定</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </div>
+                    <div class="upload-text">
+                        <div>点击或拖拽上传Excel文件</div>
+                        <div style="font-size: 0.8em; color: var(--ios-gray)">支持 .xlsx 格式</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="today-stats" id="todayStats">
+            <div class="stats-info">
+                <button class="filter-button" id="filterAll">全部句子</button>
+                <button class="filter-button" id="filterChecked">已打卡</button>
+                <div class="stat-item">
+                    <div class="stat-value" id="checkedCount">0</div>
+                    <div>今日已打卡</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="remainingCount">0</div>
+                    <div>剩余句子</div>
+                </div>
+            </div>
+            <button class="clear-checked" id="clearChecked">清除今日打卡</button>
+        </div>
+
+        <div class="scrollable-content">
+            <div class="content-grid" id="output"></div>
+        </div>
+    </div>
+
+    <div class="assistant-bubble" id="assistantBubble">
+        <div class="bubble-content"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const outputDiv = document.getElementById('output');
+
+        // 拖拽上传相关事件
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => {
+                uploadArea.classList.add('drag-over');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => {
+                uploadArea.classList.remove('drag-over');
+            });
+        });
+
+        uploadArea.addEventListener('drop', handleDrop);
+        uploadArea.addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.xlsx';
+            input.onchange = e => handleFile(e.target.files[0]);
+            input.click();
+        });
+
+        function handleDrop(e) {
+            const file = e.dataTransfer.files[0];
+            handleFile(file);
+        }
+
+        // 添加文件标识和存储管理
+        class StorageManager {
+            constructor() {
+                this.currentFileId = null;
+            }
+
+            // 生成文件唯一标识
+            generateFileId(file) {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const content = e.target.result;
+                        // 使用文件名和内容的前1000字节生成唯一标识
+                        const fileId = btoa(file.name + content.slice(0, 1000)).replace(/[/+=]/g, '');
+                        resolve(fileId);
+                    };
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+
+            // 保存用户数据
+            saveUserData(fileId, data) {
+                const userData = {
+                    timestamp: Date.now(),
+                    checkedItems: {},
+                    practiceCount: {},
+                    notes: {}
+                };
+                localStorage.setItem(`rs_data_${fileId}`, JSON.stringify(userData));
+                return userData;
+            }
+
+            // 获取用户数据
+            getUserData(fileId) {
+                const data = localStorage.getItem(`rs_data_${fileId}`);
+                return data ? JSON.parse(data) : this.saveUserData(fileId);
+            }
+
+            // 更新用户数据
+            updateUserData(fileId, key, index, value) {
+                const userData = this.getUserData(fileId);
+                if (!userData[key]) userData[key] = {};
+                userData[key][index] = value;
+                userData.timestamp = Date.now();
+                localStorage.setItem(`rs_data_${fileId}`, JSON.stringify(userData));
+            }
+        }
+
+        const storageManager = new StorageManager();
+
+        // 修改文件处理函数
+        async function handleFile(file) {
+            if (file && file.name.endsWith('.xlsx')) {
+                // 生成文件ID
+                const fileId = await storageManager.generateFileId(file);
+                storageManager.currentFileId = fileId;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    processData(rows, fileId);
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                alert('请上传 .xlsx 格式的文件');
+            }
+        }
+
+        // 修改数据处理函数
+        function processData(rows, fileId) {
+            let extractedData = [];
+            // 跳过前3行标题
+            for (let i = 3; i < rows.length; i++) {
+                const row = rows[i];
+                if (row && row[2]) {
+                    const contentParts = row[2].split('\n');
+                    if (contentParts.length > 0) {
+                        extractedData.push(contentParts[0]);
+                    }
+                }
+            }
+
+            displayContent(extractedData, fileId);
+        }
+
+        // 修改内容显示函数
+        function displayContent(data, fileId) {
+            const userData = storageManager.getUserData(fileId);
+            
+            outputDiv.innerHTML = data.map((line, index) => {
+                const isChecked = userData.checkedItems[index] ? 'checked' : '';
+                const practiceCount = userData.practiceCount[index] || 0;
+                const note = userData.notes[index] || '';
+                
+                return `
+                    <div class="content-item ${isChecked}" data-index="${index}" data-practice-count="${practiceCount}">
+                        <div class="content-text">${index + 1}. ${line}</div>
+                        <div class="content-actions">
+                            <button class="action-button check-button" onclick="toggleCheck(this)">${isChecked ? '✓' : '✓'}</button>
+                            <button class="action-button practice-button" onclick="practice(this)">▶</button>
+                            <button class="action-button note-button" onclick="toggleNote(this)">📝</button>
+                        </div>
+                        <input type="text" class="note-input" placeholder="添加备注..." 
+                               onblur="saveNote(this)" value="${note}">
+                        <div class="practice-count">${practiceCount}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // 初始化统计
+            updateStats(true);
+        }
+
+        // 更新统计函数
+        function updateStats(isInitial = false) {
+            if (!storageManager.currentFileId) return;
+
+            const userData = storageManager.getUserData(storageManager.currentFileId);
+            const totalItems = document.querySelectorAll('.content-item').length;
+            
+            let checkedCount = isInitial ? 
+                Object.values(userData.checkedItems).filter(Boolean).length :
+                document.querySelectorAll('.content-item.checked').length;
+
+            // 更新显示
+            document.getElementById('checkedCount').textContent = checkedCount;
+            document.getElementById('remainingCount').textContent = totalItems - checkedCount;
+
+            // 助手提示
+            if (!isInitial && checkedCount > 0 && checkedCount % 20 === 0) {
+                const randomMessage = assistantMessages[Math.floor(Math.random() * assistantMessages.length)];
+                showAssistantMessage(randomMessage);
+            }
+
+            if (!isInitial && checkedCount === totalItems && totalItems > 0) {
+                showAssistantMessage("恭喜你完成了所有句子的练习！真是太厉害了！🎉");
+            }
+
+            // 更新过滤按钮状态
+            const filterCheckedBtn = document.getElementById('filterChecked');
+            filterCheckedBtn.textContent = `已打卡 (${checkedCount})`;
+            
+            const filterAllBtn = document.getElementById('filterAll');
+            filterAllBtn.textContent = `全部句子 (${totalItems})`;
+        }
+
+        // 修改状态切换函数
+        function toggleCheck(button) {
+            const item = button.closest('.content-item');
+            const index = item.dataset.index;
+            item.classList.toggle('checked');
+            
+            // 更新本地存储
+            storageManager.updateUserData(
+                storageManager.currentFileId,
+                'checkedItems',
+                index,
+                item.classList.contains('checked')
+            );
+            
+            updateStats();
+        }
+
+        // 修改练习功能
+        function practice(button) {
+            const item = button.closest('.content-item');
+            const index = item.dataset.index;
+            const countDisplay = item.querySelector('.practice-count');
+            let count = parseInt(item.dataset.practiceCount) || 0;
+            count++;
+            
+            // 更新显示和存储
+            item.dataset.practiceCount = count;
+            countDisplay.textContent = count;
+            storageManager.updateUserData(
+                storageManager.currentFileId,
+                'practiceCount',
+                index,
+                count
+            );
+            
+            if (count >= 5 && !item.classList.contains('checked')) {
+                toggleCheck(item.querySelector('.check-button'));
+            }
+
+            button.style.transform = 'scale(1.2)';
+            setTimeout(() => button.style.transform = '', 200);
+        }
+
+        // 修改备注保存功能
+        function saveNote(input) {
+            const item = input.closest('.content-item');
+            const index = item.dataset.index;
+            
+            storageManager.updateUserData(
+                storageManager.currentFileId,
+                'notes',
+                index,
+                input.value
+            );
+            
+            input.style.display = 'none';
+        }
+
+        // 修改清除功能
+        document.getElementById('clearChecked').addEventListener('click', function() {
+            if (!storageManager.currentFileId) return;
+            showCatDialog();
+        });
+
+        // 修改筛选功能
+        document.getElementById('filterAll').addEventListener('click', function() {
+            document.querySelectorAll('.content-item').forEach(item => {
+                item.style.display = 'block';
+            });
+            updateFilterButtons(this);
+        });
+
+        document.getElementById('filterChecked').addEventListener('click', function() {
+            document.querySelectorAll('.content-item').forEach(item => {
+                item.style.display = item.classList.contains('checked') ? 'block' : 'none';
+            });
+            updateFilterButtons(this);
+        });
+
+        function updateFilterButtons(activeButton) {
+            document.querySelectorAll('.filter-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            activeButton.classList.add('active');
+        }
+
+        // 添加对话框相关函数
+        function showCatDialog() {
+            if (!storageManager.currentFileId) return;
+            
+            const dialog = document.getElementById('catDialog');
+            const catLogo = document.querySelector('.cat-logo');
+            
+            // 确保对话框在正确的位置
+            const logoSection = document.querySelector('.logo-section');
+            if (!dialog.parentElement.classList.contains('logo-section')) {
+                logoSection.appendChild(dialog);
+            }
+            
+            // 添加显示类名
+            dialog.classList.add('show');
+            catLogo.classList.add('talking');
+            
+            // 添加点击外部关闭功能
+            document.addEventListener('click', handleOutsideClick);
+        }
+
+        function handleOutsideClick(e) {
+            const dialog = document.getElementById('catDialog');
+            const clearButton = document.getElementById('clearChecked');
+            
+            // 如果点击的不是对话框内部元素且不是清除按钮
+            if (!dialog.contains(e.target) && e.target !== clearButton) {
+                hideCatDialog();
+            }
+        }
+
+        function hideCatDialog() {
+            const dialog = document.getElementById('catDialog');
+            const catLogo = document.querySelector('.cat-logo');
+            
+            dialog.classList.remove('show');
+            catLogo.classList.remove('talking');
+            
+            // 移除点击外部关闭事件监听
+            document.removeEventListener('click', handleOutsideClick);
+        }
+
+        function confirmClearChecked() {
+            document.querySelectorAll('.content-item.checked').forEach(item => {
+                const index = item.dataset.index;
+                item.classList.remove('checked');
+                storageManager.updateUserData(
+                    storageManager.currentFileId,
+                    'checkedItems',
+                    index,
+                    false
+                );
+            });
+            
+            updateStats();
+            hideCatDialog();
+        }
+
+        // 眼睛跟随鼠标移动
+        document.addEventListener('mousemove', (e) => {
+            const eyes = document.querySelectorAll('.cat-eye');
+            eyes.forEach(eye => {
+                const rect = eye.getBoundingClientRect();
+                const eyeCenterX = rect.left + rect.width / 2;
+                const eyeCenterY = rect.top + rect.height / 2;
+                
+                const angle = Math.atan2(e.clientY - eyeCenterY, e.clientX - eyeCenterX);
+                const distance = Math.min(2, Math.sqrt(Math.pow(e.clientX - eyeCenterX, 2) + Math.pow(e.clientY - eyeCenterY, 2)) / 100);
+                
+                const x = Math.cos(angle) * distance;
+                const y = Math.sin(angle) * distance;
+                
+                eye.style.transform = `translate(${x}px, ${y}px)`;
+            });
+        });
+
+        // 修复备注功能
+        function toggleNote(button) {
+            const noteInput = button.closest('.content-item').querySelector('.note-input');
+            noteInput.style.display = noteInput.style.display === 'block' ? 'none' : 'block';
+            if (noteInput.style.display === 'block') {
+                noteInput.focus();
+            }
+        }
+
+        // 助手提示功能
+        const assistantMessages = [
+            "太棒了！继续保持这个学习热情！🌟",
+            "你已经完成了20个句子，真厉害！💪",
+            "学习的路上有我陪着你，继续加油！😊",
+            "看到你这么认真学习，我也很开心！✨"
+        ];
+
+        function showAssistantMessage(message, duration = 3000) {
+            const bubble = document.getElementById('assistantBubble');
+            bubble.querySelector('.bubble-content').textContent = message;
+            bubble.classList.add('show');
+            
+            setTimeout(() => {
+                bubble.classList.remove('show');
+            }, duration);
+        }
+    </script>
+</body>
+</html>
