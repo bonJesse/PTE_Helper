@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Excel 内容提取与分析</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <script src="https://unpkg.com/compromise@latest/builds/compromise.min.js"></script>
@@ -659,6 +659,196 @@
 
         .cat-dialog.show {
             animation: popIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        /* 移动端适配基础设置 */
+        @media screen and (max-width: 768px) {
+            :root {
+                --container-width: 100%;
+            }
+
+            body {
+                padding: 10px;
+            }
+
+            /* 头部布局调整 */
+            .header-content {
+                flex-direction: column;
+                gap: 20px;
+                padding: 10px 0;
+            }
+
+            .logo-section {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .logo {
+                width: 60px;
+                height: 60px;
+            }
+
+            .upload-area {
+                width: 100%;
+                padding: 12px;
+            }
+
+            /* 统计区域调整 */
+            .today-stats {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px;
+            }
+
+            .stats-info {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 10px;
+            }
+
+            .filter-button {
+                flex: 1;
+                min-width: 120px;
+                margin: 0;
+                font-size: 13px;
+                padding: 6px 12px;
+            }
+
+            .clear-checked {
+                width: 100%;
+                margin-top: 10px;
+            }
+
+            /* 内容网格调整 */
+            .content-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+                margin-top: 15px;
+            }
+
+            .content-item {
+                padding: 15px;
+            }
+
+            .content-text {
+                font-size: 15px;
+                line-height: 1.4;
+            }
+
+            /* 操作按钮调整 */
+            .content-actions {
+                display: flex;
+                gap: 8px;
+            }
+
+            .action-button {
+                padding: 8px;
+                font-size: 16px;
+            }
+
+            /* 对话框位置调整 */
+            .cat-dialog {
+                width: calc(100% - 40px);
+                max-width: 300px;
+                padding: 12px;
+            }
+
+            /* 助手气泡调整 */
+            .assistant-bubble {
+                width: calc(100% - 40px);
+                max-width: 280px;
+                padding: 12px 16px;
+                bottom: 20px;
+            }
+
+            /* 滚动区域调整 */
+            .scrollable-content {
+                padding: 15px;
+            }
+
+            /* 固定头部调整 */
+            .fixed-header {
+                padding: 10px 15px;
+            }
+
+            /* 练习次数显示调整 */
+            .practice-count {
+                font-size: 20px;
+                bottom: 8px;
+                right: 8px;
+            }
+
+            /* 备注输入框调整 */
+            .note-input {
+                font-size: 16px;  /* 避免iOS自动缩放 */
+                padding: 8px;
+            }
+        }
+
+        /* 适配超小屏幕 */
+        @media screen and (max-width: 360px) {
+            .stats-info {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .filter-button {
+                width: 100%;
+            }
+
+            .logo {
+                width: 50px;
+                height: 50px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+        }
+
+        /* 横屏模式优化 */
+        @media screen and (max-width: 896px) and (orientation: landscape) {
+            .content-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .fixed-header {
+                position: relative;
+            }
+
+            .header-content {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+
+            .today-stats {
+                flex-direction: row;
+            }
+        }
+
+        /* 添加安全区域适配 */
+        @supports (padding: max(0px)) {
+            .container {
+                padding-left: max(15px, env(safe-area-inset-left));
+                padding-right: max(15px, env(safe-area-inset-right));
+                padding-bottom: max(15px, env(safe-area-inset-bottom));
+            }
+        }
+
+        /* 优化触摸区域 */
+        @media (hover: none) and (pointer: coarse) {
+            .action-button {
+                min-width: 44px;
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .cat-dialog-button {
+                min-height: 44px;
+                padding: 8px 16px;
+            }
         }
     </style>
 </head>
